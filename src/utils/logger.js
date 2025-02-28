@@ -3,6 +3,25 @@
  * Logger utility for structured logging
  */
 
+// Default to production mode (false)
+let isDevelopment = false;
+
+// Load development mode setting from storage
+try {
+  chrome.storage.sync.get(['development_mode'], function(result) {
+    if (result.development_mode !== undefined) {
+      isDevelopment = result.development_mode;
+      console.log('TextMate: Development mode loaded from storage:', isDevelopment);
+      updateConfig();
+    }
+  });
+  
+  // Note: We've removed the message listener for development mode changes
+  // Changes will be picked up when the extension is reloaded
+} catch (error) {
+  console.warn('Unable to access chrome storage or runtime, using default development mode:', isDevelopment);
+}
+
 // Log levels
 const LogLevel = {
   DEBUG: 0,
@@ -14,14 +33,21 @@ const LogLevel = {
 
 // Default configuration
 let config = {
-  level: LogLevel.INFO,  // Default log level
+  level: LogLevel.ERROR,  // Default to ERROR level
   prefix: 'TextMate',    // Log prefix
   enableConsole: true,   // Enable console output
-  enableRemote: false,   // Enable remote logging
-  remoteEndpoint: '',    // Remote logging endpoint
-  environment: 'production', // Environment (development, staging, production)
-  version: chrome.runtime.getManifest().version // Extension version
+  environment: 'production',
+  version: '1.0.0' // Extension version
 };
+
+// Update configuration based on development mode
+function updateConfig() {
+  config.level = isDevelopment ? LogLevel.DEBUG : LogLevel.ERROR;
+  config.environment = isDevelopment ? 'development' : 'production';
+}
+
+// Initialize config
+updateConfig();
 
 /**
  * Configure the logger
@@ -53,31 +79,6 @@ function formatLog(level, message, data = null) {
 }
 
 /**
- * Send log to remote endpoint if configured
- * @param {Object} logObject - Log object to send
- */
-function sendRemoteLog(logObject) {
-  if (!config.enableRemote || !config.remoteEndpoint) return;
-  
-  try {
-    fetch(config.remoteEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(logObject)
-    }).catch(err => {
-      // Silently fail remote logging
-      if (config.enableConsole) {
-        console.error(`${config.prefix}: Failed to send remote log:`, err);
-      }
-    });
-  } catch (error) {
-    // Catch any errors to prevent logging failures from affecting the app
-  }
-}
-
-/**
  * Log a message at the specified level
  * @param {string} level - Log level
  * @param {string} message - Log message
@@ -106,9 +107,6 @@ function log(level, message, data = null) {
         break;
     }
   }
-  
-  // Remote logging
-  sendRemoteLog(logObject);
 }
 
 /**
@@ -169,5 +167,6 @@ export default {
   info,
   warn,
   error,
-  createChildLogger
+  createChildLogger,
+  updateConfig
 }; 

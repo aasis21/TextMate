@@ -108,6 +108,16 @@
       margin-right: 8px;
     }
     
+    .checkbox-option {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .checkbox-option input {
+      margin-right: 8px;
+    }
+    
     /* Dark mode support */
     @media (prefers-color-scheme: dark) {
       body {
@@ -174,16 +184,6 @@
         </div>
       </div>
     </div>
-    
-    <button id="save-btn">Save Settings</button>
-    
-    <div id="success-message" class="success-message">
-      Settings saved successfully!
-    </div>
-    
-    <div id="error-message" class="error-message">
-      Error saving settings. Please try again.
-    </div>
   </div>
   
   <div class="card">
@@ -205,6 +205,33 @@
           <label for="tone-professional">Professional</label>
         </div>
       </div>
+    </div>
+  </div>
+  
+  <div class="card">
+    <div class="section-title">Advanced Settings</div>
+    
+    <div class="form-group">
+      <div class="checkbox-option">
+        <input type="checkbox" id="dev-mode-toggle">
+        <label for="dev-mode-toggle">Enable Development Mode (verbose logging)</label>
+      </div>
+      <div class="help-text">
+        Turn this on only for troubleshooting. Enables detailed logging in the browser console.
+      </div>
+    </div>
+  </div>
+  
+  <!-- Save button and messages moved to the end -->
+  <div class="card">
+    <button id="save-btn">Save Settings</button>
+    
+    <div id="success-message" class="success-message">
+      Settings saved successfully!
+    </div>
+    
+    <div id="error-message" class="error-message">
+      Error saving settings. Please try again.
     </div>
   </div>
   

@@ -1,22 +1,11 @@
 // TextMate - AI Text Assistant
 // Popup script
 
-// Import logger and config
+// Import logger
 import Logger from '../utils/logger.js';
-import { loggingConfig } from '../utils/config.js';
 
 // Create a logger for this module
 const logger = Logger.createChildLogger('Popup');
-
-// Configure logger using centralized config
-Logger.configure({
-  level: loggingConfig.level === 'DEBUG' ? Logger.LogLevel.DEBUG : Logger.LogLevel.INFO,
-  environment: loggingConfig.environment,
-  enableConsole: loggingConfig.enableConsole,
-  enableRemote: loggingConfig.enableRemote,
-  remoteEndpoint: loggingConfig.remoteEndpoint,
-  version: loggingConfig.version
-});
 
 document.addEventListener('DOMContentLoaded', function() {
   logger.info('Popup initialized');

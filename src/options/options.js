@@ -1,22 +1,11 @@
 // TextMate - AI Text Assistant
 // Options page script
 
-// Import logger and config
+// Import logger
 import Logger from '../utils/logger.js';
-import { loggingConfig } from '../utils/config.js';
 
 // Create a logger for this module
 const logger = Logger.createChildLogger('Options');
-
-// Configure logger using centralized config
-Logger.configure({
-  level: loggingConfig.level === 'DEBUG' ? Logger.LogLevel.DEBUG : Logger.LogLevel.INFO,
-  environment: loggingConfig.environment,
-  enableConsole: loggingConfig.enableConsole,
-  enableRemote: loggingConfig.enableRemote,
-  remoteEndpoint: loggingConfig.remoteEndpoint,
-  version: loggingConfig.version
-});
 
 document.addEventListener('DOMContentLoaded', function() {
   logger.info('Options page initialized');
@@ -28,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const errorMessage = document.getElementById('error-message');
   const modelRadios = document.querySelectorAll('input[name="ai-model"]');
   const toneRadios = document.querySelectorAll('input[name="writing-tone"]');
+  const devModeToggle = document.getElementById('dev-mode-toggle');
   
   // Load saved settings
   loadSettings();
@@ -38,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Load settings from storage
   function loadSettings() {
     logger.debug('Loading settings from storage');
-    chrome.storage.sync.get(['openai_api_key', 'ai_model', 'writing_tone'], function(result) {
+    chrome.storage.sync.get(['openai_api_key', 'ai_model', 'writing_tone', 'development_mode'], function(result) {
       // Set API key if it exists
       if (result.openai_api_key) {
         apiKeyInput.value = result.openai_api_key;
@@ -67,6 +57,12 @@ document.addEventListener('DOMContentLoaded', function() {
             break;
           }
         }
+      }
+      
+      // Set development mode if it exists
+      if (result.development_mode !== undefined) {
+        devModeToggle.checked = result.development_mode;
+        logger.info('Development mode loaded from storage', { devMode: result.development_mode });
       }
     });
   }
@@ -103,17 +99,22 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
     
+    // Get development mode setting
+    const developmentMode = devModeToggle.checked;
+    
     logger.info('Saving settings to storage', { 
       model: selectedModel, 
       tone: selectedTone,
-      hasApiKey: !!apiKey 
+      hasApiKey: !!apiKey,
+      developmentMode: developmentMode
     });
     
     // Save to storage
     chrome.storage.sync.set({
       'openai_api_key': apiKey,
       'ai_model': selectedModel,
-      'writing_tone': selectedTone
+      'writing_tone': selectedTone,
+      'development_mode': developmentMode
     }, function() {
       // Check for error
       if (chrome.runtime.lastError) {
@@ -122,6 +123,9 @@ document.addEventListener('DOMContentLoaded', function() {
       } else {
         logger.info('Settings saved successfully');
         showSuccess('Settings saved successfully!');
+        
+        // Note: We're no longer sending messages about setting changes
+        // Changes will be picked up when components check storage again
       }
     });
   }

@@ -1,68 +1,84 @@
 // TextMate - AI Text Assistant
 // Content script that injects AI functionality into text boxes
 
-// Create a simple logger for the content script
-const Logger = {
-  LogLevel: {
+// Inline implementation of logger since content scripts can't use import
+const log = (function() {
+  // Default to production mode (false)
+  let isDevelopment = false;
+  
+  // Log levels
+  const LogLevel = {
     DEBUG: 0,
     INFO: 1,
     WARN: 2,
     ERROR: 3,
     NONE: 4
-  },
+  };
   
   // Default configuration
-  config: {
-    level: 0, // DEBUG
-    environment: 'development',
-    enableConsole: true,
-    version: '1.0.0'
-  },
+  let config = {
+    level: LogLevel.ERROR,  // Default to ERROR level
+    prefix: 'TextMate',    // Log prefix
+    enableConsole: true,   // Enable console output
+    environment: 'production',
+    context: 'content'     // Default context
+  };
   
-  // Configure the logger
-  configure: function(config) {
-    if (config) {
-      this.config = { ...this.config, ...config };
-    }
-  },
-  
-  // Create a child logger with a specific module name
-  createChildLogger: function(moduleName) {
-    return {
-      debug: function(message, data) {
-        if (Logger.config.level <= Logger.LogLevel.DEBUG) {
-          console.debug(`[${Logger.config.environment}][${moduleName}] DEBUG:`, message, data || '');
-        }
-      },
-      info: function(message, data) {
-        if (Logger.config.level <= Logger.LogLevel.INFO) {
-          console.info(`[${Logger.config.environment}][${moduleName}] INFO:`, message, data || '');
-        }
-      },
-      warn: function(message, data) {
-        if (Logger.config.level <= Logger.LogLevel.WARN) {
-          console.warn(`[${Logger.config.environment}][${moduleName}] WARN:`, message, data || '');
-        }
-      },
-      error: function(message, data) {
-        if (Logger.config.level <= Logger.LogLevel.ERROR) {
-          console.error(`[${Logger.config.environment}][${moduleName}] ERROR:`, message, data || '');
-        }
-      }
-    };
+  // Update configuration based on development mode
+  function updateConfig() {
+    config.level = isDevelopment ? LogLevel.DEBUG : LogLevel.ERROR;
+    config.environment = isDevelopment ? 'development' : 'production';
   }
-};
-
-// Create a logger for this module
-const logger = Logger.createChildLogger('Content');
-
-// Configure logger - hardcoded for now
-Logger.configure({
-  level: Logger.LogLevel.DEBUG,
-  environment: 'development',
-  enableConsole: true,
-  version: '1.0.0'
-});
+  
+  // Load development mode setting from storage
+  try {
+    chrome.storage.sync.get(['development_mode'], function(result) {
+      if (result.development_mode !== undefined) {
+        isDevelopment = result.development_mode;
+        console.log('TextMate: Development mode loaded from storage:', isDevelopment);
+        updateConfig();
+      }
+    });
+  } catch (error) {
+    console.warn('Unable to access chrome storage, using default development mode:', isDevelopment);
+  }
+  
+  // Initialize config
+  updateConfig();
+  
+  // Log functions
+  function debug(message, data = null) {
+    if (LogLevel.DEBUG < config.level) return;
+    const formattedMessage = `${config.prefix}: [${config.context}] ${message}`;
+    console.debug(formattedMessage, data || '');
+  }
+  
+  function info(message, data = null) {
+    if (LogLevel.INFO < config.level) return;
+    const formattedMessage = `${config.prefix}: [${config.context}] ${message}`;
+    console.info(formattedMessage, data || '');
+  }
+  
+  function warn(message, data = null) {
+    if (LogLevel.WARN < config.level) return;
+    const formattedMessage = `${config.prefix}: [${config.context}] ${message}`;
+    console.warn(formattedMessage, data || '');
+  }
+  
+  function error(message, data = null) {
+    if (LogLevel.ERROR < config.level) return;
+    const formattedMessage = `${config.prefix}: [${config.context}] ${message}`;
+    console.error(formattedMessage, data || '');
+  }
+  
+  // Return the logger API
+  return {
+    debug,
+    info,
+    warn,
+    error
+  };
+})();
 
 // Global variables
 let apiKey = '';
@@ -74,7 +90,7 @@ let textmateContainer = null; // Container for all TextMate elements
 
 // Initialize the extension
 function initialize() {
-  logger.info('Initializing extension');
+  log.info('Initializing extension');
   
   // Create container for TextMate elements
   createTextMateContainer();
@@ -91,7 +107,7 @@ function initialize() {
   // Add global click handler for debugging
   document.addEventListener('click', function(e) {
     if (e.target && e.target.classList && e.target.classList.contains('textmate-ai-button')) {
-      logger.debug('Global click handler detected AI button click');
+      log.debug('Global click handler detected AI button click');
       handleAIButtonClick(e);
     }
   }, true);
@@ -102,7 +118,7 @@ function initialize() {
   // Add a MutationObserver to ensure container stays at the end of body
   setupContainerObserver();
   
-  logger.info('Event listeners added');
+  log.info('Event listeners added');
 }
 
 // Create a container for all TextMate elements
@@ -127,7 +143,7 @@ function createTextMateContainer() {
   // Append to the end of body to ensure it's on top
   document.body.appendChild(textmateContainer);
   
-  logger.info('Container created');
+  log.info('Container created');
 }
 
 // Setup MutationObserver to ensure container stays at the end of body
@@ -135,14 +151,14 @@ function setupContainerObserver() {
   const observer = new MutationObserver(function(mutations) {
     // Check if our container is still the last child of body
     if (document.body.lastChild !== textmateContainer) {
-      logger.info('Container is not at the end of body, moving it');
+      log.info('Container is not at the end of body, moving it');
       // Move it to the end
       document.body.appendChild(textmateContainer);
     }
     
     // Also check if container still exists
     if (!document.getElementById('textmate-container')) {
-      logger.info('Container was removed, recreating it');
+      log.info('Container was removed, recreating it');
       createTextMateContainer();
     }
   });
@@ -152,7 +168,7 @@ function setupContainerObserver() {
     subtree: false
   });
   
-  logger.info('Container observer setup complete');
+  log.info('Container observer setup complete');
 }
 
 // Setup MutationObserver to handle dynamically added content
@@ -162,7 +178,7 @@ function setupMutationObserver() {
       if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
         mutation.addedNodes.forEach(function(node) {
           if (node.nodeType === 1 && isTextInputElement(node)) {
-            logger.info('Detected dynamically added text input');
+            log.info('Detected dynamically added text input');
             currentTextElement = node;
             showAIButton(node);
           }
@@ -176,7 +192,7 @@ function setupMutationObserver() {
     subtree: true
   });
   
-  logger.info('MutationObserver setup complete');
+  log.info('MutationObserver setup complete');
 }
 
 // Load settings from storage
@@ -184,14 +200,14 @@ function loadSettings() {
   chrome.storage.sync.get(['openai_api_key', 'ai_model', 'writing_tone'], function(result) {
     if (result.openai_api_key) {
       apiKey = result.openai_api_key;
-      logger.info('API key loaded');
+      log.info('API key loaded');
     } else {
-      logger.info('No API key found');
+      log.info('No API key found');
     }
     
     if (result.ai_model) {
       aiModel = result.ai_model;
-      logger.info('AI model set to', aiModel);
+      log.info('AI model set to', aiModel);
     }
   });
 }
@@ -202,7 +218,7 @@ function handleFocusIn(event) {
   
   // Check if the focused element is a text input or textarea
   if (isTextInputElement(element)) {
-    logger.info('Text input element focused');
+    log.info('Text input element focused');
     
     // Store the reference to the current text element
     currentTextElement = element;
@@ -221,7 +237,7 @@ function handleFocusIn(event) {
       setTimeout(() => {
         // Only clear if no new focus has happened
         if (currentTextElement === element) {
-          logger.info('Maintaining text element reference for button clicks');
+          log.info('Maintaining text element reference for button clicks');
         }
       }, 500);
       
@@ -296,7 +312,7 @@ function showAIButton(element) {
   
   // Add to TextMate container instead of document body
   textmateContainer.appendChild(aiButton);
-  logger.info('AI button added to container');
+  log.info('AI button added to container');
   
   // Add multiple event handlers to ensure at least one works
   aiButton.addEventListener('click', handleAIButtonClick, true); // Use capture phase
@@ -308,22 +324,22 @@ function showAIButton(element) {
   
   // Add additional mousedown event for debugging
   aiButton.addEventListener('mousedown', function(e) {
-    logger.info('AI button mousedown detected');
+    log.info('AI button mousedown detected');
     // Try to trigger click on mousedown as a fallback
     setTimeout(() => {
-      logger.info('Triggering click from mousedown');
+      log.info('Triggering click from mousedown');
       showAIOptionsForButton(aiButton);
     }, 100);
   }, true);
   
   // Test if button is clickable
-  logger.info('Button element:', aiButton);
-  logger.info('Button clickable:', (typeof aiButton.click === 'function'));
+  log.info('Button element:', aiButton);
+  log.info('Button clickable:', (typeof aiButton.click === 'function'));
   
   // Add a keyboard shortcut to trigger the AI button (Alt+A)
   document.addEventListener('keydown', function(e) {
     if (e.altKey && (e.key === 'a' || e.key === 'A')) {
-      logger.info('Alt+A shortcut detected');
+      log.info('Alt+A shortcut detected');
       if (aiButton) {
         showAIOptionsForButton(aiButton);
       }
@@ -333,7 +349,7 @@ function showAIButton(element) {
 
 // Handle AI button click
 function handleAIButtonClick(e) {
-  logger.info('AI button clicked');
+  log.info('AI button clicked');
   if (e) {
     e.preventDefault();
     e.stopPropagation();
@@ -343,14 +359,14 @@ function handleAIButtonClick(e) {
   const button = e.target.closest('.textmate-ai-button');
   
   if (button) {
-    logger.info('Found button element from click event');
+    log.info('Found button element from click event');
     // Use our direct method to show options for this specific button
     showAIOptionsForButton(button);
   } else {
-    logger.info('Using default AI button');
+    log.info('Using default AI button');
     // Force the options to show with a slight delay to ensure event propagation is complete
     setTimeout(() => {
-      logger.info('Executing showAIOptions after delay');
+      log.info('Executing showAIOptions after delay');
       showAIOptions();
     }, 50);
   }
@@ -360,7 +376,7 @@ function handleAIButtonClick(e) {
 
 // Manually trigger the AI button
 function triggerAIButton() {
-  logger.info('Manually triggering AI button');
+  log.info('Manually triggering AI button');
   
   // Force the options to show directly
   showAIOptions();
@@ -376,18 +392,18 @@ function hideAIButton() {
 
 // Show AI options menu
 function showAIOptions() {
-  logger.info('Showing AI options');
+  log.info('Showing AI options');
   
   // Remove any existing popup first
   const existingPopup = document.querySelector('.textmate-ai-options');
   if (existingPopup) {
     existingPopup.parentNode.removeChild(existingPopup);
-    logger.info('Removed existing popup');
+    log.info('Removed existing popup');
   }
   
   // Check if we have a current text element
   if (!currentTextElement) {
-    logger.info('No current text element');
+    log.info('No current text element');
     
     // Try to find the text element using the data attribute
     if (aiButton && aiButton.dataset.textElementId) {
@@ -395,7 +411,7 @@ function showAIOptions() {
       const textElement = document.querySelector(`[data-textmate-id="${textElementId}"]`);
       
       if (textElement) {
-        logger.info('Recovered text element from data attribute');
+        log.info('Recovered text element from data attribute');
         currentTextElement = textElement;
       } else {
         // If we still can't find it, show a notification
@@ -409,7 +425,7 @@ function showAIOptions() {
   }
   
   if (!aiButton) {
-    logger.info('No AI button found');
+    log.info('No AI button found');
     return;
   }
   
@@ -426,7 +442,7 @@ function showAIOptions() {
     
     // Position the popup
     const rect = aiButton.getBoundingClientRect();
-    logger.info('Button position for popup:', rect);
+    log.info('Button position for popup:', rect);
     
     optionsPopup.style.position = 'absolute';
     optionsPopup.style.left = `${rect.left}px`;
@@ -437,7 +453,7 @@ function showAIOptions() {
     const optionElements = optionsPopup.querySelectorAll('.textmate-ai-option');
     optionElements.forEach(option => {
       option.addEventListener('click', function(e) {
-        logger.info('Option clicked', e.target.getAttribute('data-action'));
+        log.info('Option clicked', e.target.getAttribute('data-action'));
         const action = e.target.getAttribute('data-action');
         if (action) {
           handleAIAction(action);
@@ -452,9 +468,9 @@ function showAIOptions() {
     
     // Close when clicking outside
     document.addEventListener('click', function closePopup(e) {
-      logger.info('Document click detected, checking if should close popup');
+      log.info('Document click detected, checking if should close popup');
       if (!optionsPopup.contains(e.target) && e.target !== aiButton) {
-        logger.info('Closing popup');
+        log.info('Closing popup');
         if (optionsPopup.parentNode) {
           optionsPopup.parentNode.removeChild(optionsPopup);
         }
@@ -464,7 +480,7 @@ function showAIOptions() {
     
     // Add to TextMate container instead of document body
     textmateContainer.appendChild(optionsPopup);
-    logger.info('Options popup added to container');
+    log.info('Options popup added to container');
     
     // Force a reflow to ensure the popup is rendered
     optionsPopup.getBoundingClientRect();
@@ -472,17 +488,17 @@ function showAIOptions() {
     // Add a visible indicator that the popup is shown
     showNotification('AI options menu opened');
   } catch (error) {
-    logger.error('Error showing options menu:', error);
+    log.error('Error showing options menu:', error);
     showNotification('Error showing AI options: ' + error.message);
   }
 }
 
 // Handle AI actions (generate, rewrite, summarize, expand)
 function handleAIAction(action) {
-  logger.info('Handling AI action:', action);
+  log.info('Handling AI action:', action);
   
   if (!currentTextElement) {
-    logger.error('No current text element for AI action');
+    log.error('No current text element for AI action');
     showNotification('Please click in a text field first');
     return;
   }
@@ -493,20 +509,20 @@ function handleAIAction(action) {
   const selectedText = getSelectedText(textElement);
   const fullText = getElementText(textElement);
   
-  logger.info('Selected text length:', selectedText ? selectedText.length : 0);
-  logger.info('Full text length:', fullText ? fullText.length : 0);
+  log.info('Selected text length:', selectedText ? selectedText.length : 0);
+  log.info('Full text length:', fullText ? fullText.length : 0);
   
   switch (action) {
     case 'generate':
-      logger.info('Showing prompt popup for generate action');
+      log.info('Showing prompt popup for generate action');
       showPromptPopup('What would you like to generate?', '', (prompt) => {
         // Ensure we still have the text element reference
         if (currentTextElement !== textElement) {
-          logger.info('Restoring text element reference');
+          log.info('Restoring text element reference');
           currentTextElement = textElement;
         }
         
-        logger.info('Generating text with prompt:', prompt.substring(0, 50) + (prompt.length > 50 ? '...' : ''));
+        log.info('Generating text with prompt:', prompt.substring(0, 50) + (prompt.length > 50 ? '...' : ''));
         generateAIText(prompt, false);
       });
       break;
@@ -532,7 +548,7 @@ function handleAIAction(action) {
       }
       break;
     default:
-      logger.error('Unknown action:', action);
+      log.error('Unknown action:', action);
       showNotification('Unknown action: ' + action);
   }
 }
@@ -562,7 +578,7 @@ function getElementText(element) {
 
 // Show a popup for entering a custom prompt
 function showPromptPopup(title, defaultValue, callback) {
-  logger.info('Showing prompt popup');
+  log.info('Showing prompt popup');
   
   // Store the current text element to ensure it's not lost
   const textElement = currentTextElement;
@@ -592,18 +608,18 @@ function showPromptPopup(title, defaultValue, callback) {
   const textArea = popup.querySelector('.textmate-ai-prompt-input');
   
   cancelButton.addEventListener('click', () => {
-    logger.info('Prompt popup canceled');
+    log.info('Prompt popup canceled');
     popup.parentNode.removeChild(popup);
   });
   
   submitButton.addEventListener('click', () => {
     const promptText = textArea.value.trim();
-    logger.info('Prompt submitted, length:', promptText.length);
+    log.info('Prompt submitted, length:', promptText.length);
     
     if (promptText) {
       // Restore the text element reference if needed
       if (currentTextElement !== textElement) {
-        logger.info('Restoring text element reference in prompt popup');
+        log.info('Restoring text element reference in prompt popup');
         currentTextElement = textElement;
       }
       
@@ -638,19 +654,19 @@ function showPromptPopup(title, defaultValue, callback) {
 function generateAIText(prompt, replaceSelected = false) {
   if (!apiKey) {
     showNotification('Please set your OpenAI API key in the extension settings');
-    logger.info('No API key available');
+    log.info('No API key available');
     return;
   }
   
   // Verify we have a valid text element
   if (!currentTextElement) {
-    logger.error('No current text element when generating text');
+    log.error('No current text element when generating text');
     showNotification('Error: No text field selected');
     return;
   }
   
-  logger.info('Generating AI text with model:', aiModel);
-  logger.info('Current text element:', currentTextElement);
+  log.info('Generating AI text with model:', aiModel);
+  log.info('Current text element:', currentTextElement);
   
   // Determine the action type from the prompt
   let action = 'Generating';
@@ -696,7 +712,7 @@ function generateAIText(prompt, replaceSelected = false) {
     
     // Extract generated text
     const generatedText = data.choices[0].message.content.trim();
-    logger.info('Text generated successfully:', generatedText.substring(0, 50) + '...');
+    log.info('Text generated successfully:', generatedText.substring(0, 50) + '...');
     
     // Insert text into the current element
     insertGeneratedText(generatedText, replaceSelected);
@@ -704,23 +720,23 @@ function generateAIText(prompt, replaceSelected = false) {
   .catch(error => {
     hideLoadingIndicator(loadingIndicator);
     showNotification(`Error: ${error.message}`);
-    logger.error('OpenAI API Error:', error);
+    log.error('OpenAI API Error:', error);
   });
 }
 
 // Insert generated text into the current text element
 function insertGeneratedText(text, replaceSelected) {
-  logger.info('Inserting generated text into element');
+  log.info('Inserting generated text into element');
   
   if (!currentTextElement) {
-    logger.error('No current text element for insertion');
+    log.error('No current text element for insertion');
     showNotification('Error: No text field selected for insertion');
     return;
   }
   
   try {
     if (currentTextElement.tagName === 'INPUT' || currentTextElement.tagName === 'TEXTAREA') {
-      logger.info('Inserting into input/textarea element');
+      log.info('Inserting into input/textarea element');
       
       if (replaceSelected) {
         const start = currentTextElement.selectionStart;
@@ -734,7 +750,7 @@ function insertGeneratedText(text, replaceSelected) {
         currentTextElement.selectionStart = start + text.length;
         currentTextElement.selectionEnd = start + text.length;
         
-        logger.info('Replaced selected text');
+        log.info('Replaced selected text');
       } else {
         // Get current cursor position
         const cursorPos = currentTextElement.selectionEnd || currentTextElement.value.length;
@@ -747,10 +763,10 @@ function insertGeneratedText(text, replaceSelected) {
         currentTextElement.selectionStart = cursorPos + text.length;
         currentTextElement.selectionEnd = cursorPos + text.length;
         
-        logger.info('Inserted at cursor position');
+        log.info('Inserted at cursor position');
       }
     } else if (currentTextElement.getAttribute('contenteditable') === 'true') {
-      logger.info('Inserting into contenteditable element');
+      log.info('Inserting into contenteditable element');
       
       const selection = window.getSelection();
       if (replaceSelected && selection.rangeCount > 0) {
@@ -762,7 +778,7 @@ function insertGeneratedText(text, replaceSelected) {
       }
     } else {
       // Fallback for other types of elements
-      logger.info('Using fallback insertion method for element type:', currentTextElement.tagName);
+      log.info('Using fallback insertion method for element type:', currentTextElement.tagName);
       
       // Try to set innerText or textContent as a fallback
       if (typeof currentTextElement.innerText !== 'undefined') {
@@ -775,7 +791,7 @@ function insertGeneratedText(text, replaceSelected) {
     }
     
     // Trigger input event to notify the page of the change
-    logger.info('Triggering input event');
+    log.info('Triggering input event');
     const inputEvent = new Event('input', { bubbles: true });
     currentTextElement.dispatchEvent(inputEvent);
     
@@ -789,7 +805,7 @@ function insertGeneratedText(text, replaceSelected) {
     // Show success notification
     showNotification('Text inserted successfully');
   } catch (error) {
-    logger.error('Error inserting text:', error);
+    log.error('Error inserting text:', error);
     showNotification('Error inserting text: ' + error.message);
   }
 }
@@ -900,7 +916,7 @@ function handleKeyboardShortcuts(event) {
   // Alt+A shortcut for showing AI options
   if (event.altKey && (event.key === 'a' || event.key === 'A')) {
     event.preventDefault();
-    logger.info('Alt+A shortcut detected');
+    log.info('Alt+A shortcut detected');
     if (aiButton && currentTextElement) {
       showAIOptionsForButton(aiButton);
     }
@@ -909,7 +925,7 @@ function handleKeyboardShortcuts(event) {
 
 // Create a direct method to show AI options for a specific button
 function showAIOptionsForButton(button) {
-  logger.info('Showing AI options for specific button');
+  log.info('Showing AI options for specific button');
   
   // Find the associated text element
   let textElement = null;
@@ -919,18 +935,18 @@ function showAIOptionsForButton(button) {
     textElement = document.querySelector(`[data-textmate-id="${textElementId}"]`);
     
     if (textElement) {
-      logger.info('Found associated text element');
+      log.info('Found associated text element');
       currentTextElement = textElement;
     }
   }
   
   if (!textElement && currentTextElement) {
-    logger.info('Using current text element');
+    log.info('Using current text element');
     textElement = currentTextElement;
   }
   
   if (!textElement) {
-    logger.info('No text element found for this button');
+    log.info('No text element found for this button');
     showNotification('Please click in a text field first');
     return;
   }
@@ -940,5 +956,5 @@ function showAIOptionsForButton(button) {
 }
 
 // Initialize the extension when the page loads
-logger.info('Content script loaded');
+log.info('Content script loaded');
 initialize(); 
