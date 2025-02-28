@@ -105,6 +105,39 @@ Some websites implement strict Content Security Policies that may prevent the ex
 - No data is sent to any servers other than OpenAI's API
 - All text processing happens through direct API calls to OpenAI
 
+## Development
+
+### Logging System
+
+TextMate uses a structured logging system for better debugging and monitoring:
+
+- **Log Levels**: DEBUG, INFO, WARN, ERROR, and NONE
+- **Contextual Logging**: Each module has its own logger with context
+- **Environment-aware**: Different log levels for production vs. development
+- **Remote Logging Support**: Optional remote logging capability for production monitoring
+- **Structured Data**: Logs include timestamps, levels, and structured data objects
+
+To configure logging:
+
+```javascript
+import Logger from '../utils/logger.js';
+
+// Configure global settings
+Logger.configure({
+  level: Logger.LogLevel.INFO,
+  enableRemote: true,
+  remoteEndpoint: 'https://your-logging-service.com/api/logs',
+  environment: 'production'
+});
+
+// Create a module-specific logger
+const logger = Logger.createChildLogger('ModuleName');
+
+// Use the logger
+logger.info('Operation completed', { userId: 123, duration: 500 });
+logger.error('Operation failed', { error: 'API timeout', code: 408 });
+```
+
 ## Requirements
 
 - Chrome/Edge browser (latest version recommended)
