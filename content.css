@@ -1,0 +1,200 @@
+/* TextMate - AI Text Assistant Styles */
+
+/* AI Button */
+.textmate-ai-button {
+  background-color: #4a90e2 !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 4px !important;
+  padding: 5px 10px !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  transition: background-color 0.2s !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  z-index: 2147483647 !important;
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  position: absolute !important;
+  margin: 0 !important;
+  text-align: center !important;
+  line-height: normal !important;
+  min-width: 50px !important;
+}
+
+.textmate-ai-button:hover {
+  background-color: #357ae8 !important;
+}
+
+/* AI Options Menu */
+.textmate-ai-options {
+  background-color: white !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2) !important;
+  padding: 8px 0 !important;
+  min-width: 150px !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  z-index: 2147483647 !important;
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  position: absolute !important;
+  margin: 0 !important;
+}
+
+.textmate-ai-option {
+  padding: 8px 16px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  color: #333 !important;
+  display: block !important;
+  text-align: left !important;
+  margin: 0 !important;
+  border: none !important;
+  background: none !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.textmate-ai-option:hover {
+  background-color: #f5f5f5 !important;
+}
+
+/* Prompt Popup */
+.textmate-ai-prompt-popup {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  padding: 16px;
+  width: 400px;
+  max-width: 90vw;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  z-index: 2147483647 !important;
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.textmate-ai-prompt-header {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.textmate-ai-prompt-input {
+  width: 100%;
+  min-height: 100px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 12px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.textmate-ai-prompt-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.textmate-ai-prompt-cancel,
+.textmate-ai-prompt-submit {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+}
+
+.textmate-ai-prompt-cancel {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+.textmate-ai-prompt-submit {
+  background-color: #4a90e2;
+  color: white;
+}
+
+.textmate-ai-prompt-cancel:hover {
+  background-color: #e5e5e5;
+}
+
+.textmate-ai-prompt-submit:hover {
+  background-color: #357ae8;
+}
+
+/* Loading Indicator */
+.textmate-ai-loader {
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  z-index: 2147483647 !important;
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Notification */
+.textmate-ai-notification {
+  background-color: #333;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  max-width: 80vw;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  z-index: 2147483647 !important;
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+  .textmate-ai-options,
+  .textmate-ai-prompt-popup {
+    background-color: #2d2d2d;
+    color: #f5f5f5;
+  }
+  
+  .textmate-ai-option {
+    color: #f5f5f5;
+  }
+  
+  .textmate-ai-option:hover {
+    background-color: #3d3d3d;
+  }
+  
+  .textmate-ai-prompt-header {
+    color: #f5f5f5;
+  }
+  
+  .textmate-ai-prompt-input {
+    background-color: #3d3d3d;
+    border-color: #555;
+    color: #f5f5f5;
+  }
+  
+  .textmate-ai-prompt-cancel {
+    background-color: #444;
+    color: #f5f5f5;
+  }
+  
+  .textmate-ai-prompt-cancel:hover {
+    background-color: #555;
+  }
+} 
