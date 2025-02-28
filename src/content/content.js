@@ -589,8 +589,18 @@ function generateAIText(prompt, replaceSelected = false) {
   console.log('TextMate: Generating AI text with model:', aiModel);
   console.log('TextMate: Current text element:', currentTextElement);
   
-  // Show loading indicator
-  const loadingIndicator = showLoadingIndicator();
+  // Determine the action type from the prompt
+  let action = 'Generating';
+  if (prompt.startsWith('Rewrite')) {
+    action = 'Rewriting';
+  } else if (prompt.startsWith('Summarize')) {
+    action = 'Summarizing';
+  } else if (prompt.startsWith('Expand')) {
+    action = 'Expanding';
+  }
+  
+  // Show loading indicator with the appropriate action
+  const loadingIndicator = showLoadingIndicator(action);
   
   // Call OpenAI API
   fetch('https://api.openai.com/v1/chat/completions', {
@@ -722,10 +732,10 @@ function insertGeneratedText(text, replaceSelected) {
 }
 
 // Show loading indicator
-function showLoadingIndicator() {
+function showLoadingIndicator(action = 'Generating') {
   const loader = document.createElement('div');
   loader.className = 'textmate-ai-loader';
-  loader.innerHTML = 'Generating...';
+  loader.innerHTML = `${action}...`;
   
   // Position near the current text element
   const rect = currentTextElement.getBoundingClientRect();

@@ -1,6 +1,6 @@
 # TextMate - AI Text Assistant
 
-TextMate is a browser extension that enhances any text box on a webpage by integrating AI-driven text generation and rewriting capabilities. It allows you to generate, rewrite, and enhance text directly within input fields using OpenAI's powerful language models.
+TextMate is a browser extension that provides AI-powered text generation and rewriting capabilities for any text box on the web. It enhances text input fields by integrating OpenAI's powerful language models, allowing you to generate, rewrite, and enhance text directly within webpages.
 
 ## Features
 
