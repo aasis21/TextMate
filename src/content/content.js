@@ -88,6 +88,9 @@ let aiButton = null;
 let aiPopup = null;
 let textmateContainer = null; // Container for all TextMate elements
 
+// Import site context manager
+import { siteContextManager } from '../utils/siteContext.js';
+
 // State management for undo functionality
 const stateManager = {
   previousState: null,
@@ -150,6 +153,56 @@ const stateManager = {
     return this.previousState !== null;
   }
 };
+
+// Hardcoded URL patterns and their contexts
+const URL_CONTEXTS = [
+  {
+    urlPattern: 'portal.microsofticm.com/api',
+    context: 'This is an API documentation platform. Use technical, precise language and maintain API terminology.',
+    enabled: true
+  },
+  {
+    urlPattern: 'portal.microsofticm.com/pullrequest',
+    context: 'This is a pull request system used by software engineers to review code changes. Focus on code review best practices and clear technical explanations.',
+    enabled: true
+  },
+  {
+    urlPattern: 'portal.microsofticm.com/bugs',
+    context: 'This is a bug tracking system. Keep descriptions technical, precise, and focus on reproducibility steps and impact.',
+    enabled: true
+  },
+  {
+    urlPattern: 'portal.microsofticm.com/docs',
+    context: 'This is internal documentation. Use clear, structured technical writing with appropriate cross-references.',
+    enabled: true
+  },
+  {
+    urlPattern: 'portal.microsofticm.com/help',
+    context: 'This is a help center for users. Use simple, clear language and avoid technical jargon unless necessary.',
+    enabled: true
+  }
+];
+
+// Get context for a URL
+function getContextForUrl(url) {
+  for (const contextConfig of URL_CONTEXTS) {
+    if (!contextConfig.enabled) continue;
+    
+    // Convert URL pattern to regex
+    const pattern = contextConfig.urlPattern
+      .replace(/\./g, '\\.')  // Escape dots
+      .replace(/\*/g, '.*');  // Convert * to .*
+    
+    const regex = new RegExp(pattern);
+    if (regex.test(url)) {
+      log.info('Found matching context for URL:', url);
+      return contextConfig.context;
+    }
+  }
+  
+  log.info('No matching context found for URL:', url);
+  return '';
+}
 
 // Initialize the extension
 function initialize() {
@@ -558,19 +611,34 @@ function showAIOptions() {
 
 // Generate prompt based on action and text input
 function generatePrompt(action, text) {
+  // Get context for current URL
+  const currentContext = getContextForUrl(window.location.href);
+  log.info('Using context for prompt:', currentContext || 'None');
+
+  // Base prompts for each action
+  let basePrompt;
   switch (action) {
     case 'rewrite':
-      return `Rewrite the following text using clear, easy-to-understand language. Fix any spelling or grammar mistakes, but do not change or expand acronyms:: Text : ${text}`;
+      basePrompt = `Task: Rewrite the following text using clear, easy-to-understand language. Fix any spelling or grammar mistakes. Do not change or expand acronyms. Only return the rewritten text.\n\nText: ${text}`;
+      break;
     case 'summarize':
-      return `Summarize the following text: ${text}`;
+      basePrompt = `Task: Summarize the following text in a concise and clear format.\n\nText: ${text}`;
+      break;
     case 'expand':
-      return `Expand on the following text with more details: ${text}`;
+      basePrompt = `Task: Expand on the following text with more relevant technical or contextual details. Maintain clarity and coherence.\n\nText: ${text}`;
+      break;
     case 'generate':
-      return text; // For generate action, the text is already the prompt
+      basePrompt = text; // For generate action, the text is already the prompt
+      break;
     default:
       log.error('Unknown action for prompt generation:', action);
       return text;
   }
+
+  // Add context if available
+  return currentContext
+    ? `Context: ${currentContext}\n\n${basePrompt}`
+    : basePrompt;
 }
 
 // Handle AI actions (generate, rewrite, summarize, expand)
@@ -603,26 +671,26 @@ function handleAIAction(action) {
         }
         
         log.info('Generating text with prompt:', prompt.substring(0, 50) + (prompt.length > 50 ? '...' : ''));
-        generateAIText(generatePrompt('generate', prompt), false);
+        generateAIText('generate', prompt, false);
       });
       break;
     case 'rewrite':
       if (selectedText) {
-        generateAIText(generatePrompt('rewrite', selectedText), true);
+        generateAIText('rewrite', selectedText, true);
       } else {
         showNotification('Please select text to rewrite');
       }
       break;
     case 'summarize':
       if (selectedText) {
-        generateAIText(generatePrompt('summarize', selectedText), true);
+        generateAIText('summarize', selectedText, true);
       } else {
-        generateAIText(generatePrompt('summarize', fullText), false);
+        generateAIText('summarize', fullText, false);
       }
       break;
     case 'expand':
       if (selectedText) {
-        generateAIText(generatePrompt('expand', selectedText), true);
+        generateAIText('expand', selectedText, true);
       } else {
         showNotification('Please select text to expand');
       }
@@ -731,7 +799,7 @@ function showPromptPopup(title, defaultValue, callback) {
 }
 
 // Generate AI text using OpenAI API
-function generateAIText(prompt, replaceSelected = false) {
+function generateAIText(action, text, replaceSelected = false) {
   if (!apiKey) {
     showNotification('Please set your OpenAI API key in the extension settings');
     log.info('No API key available');
@@ -747,23 +815,17 @@ function generateAIText(prompt, replaceSelected = false) {
   
   log.info('Generating AI text with model:', aiModel);
   log.info('Current text element:', currentTextElement);
+  log.info('Action:', action);
   
   // Always save state before making any changes
   log.info('Saving current state before AI generation');
   stateManager.saveState(currentTextElement);
   
-  // Determine the action type from the prompt
-  let action = 'Generating';
-  if (prompt.startsWith('Rewrite')) {
-    action = 'Rewriting';
-  } else if (prompt.startsWith('Summarize')) {
-    action = 'Summarizing';
-  } else if (prompt.startsWith('Expand')) {
-    action = 'Expanding';
-  }
+  // Generate the prompt with context
+  const prompt = generatePrompt(action, text);
   
   // Show loading indicator with the appropriate action
-  const loadingIndicator = showLoadingIndicator(action);
+  const loadingIndicator = showLoadingIndicator(getActionDisplayText(action));
   
   // Call OpenAI API
   fetch('https://api.openai.com/v1/chat/completions', {
@@ -806,6 +868,22 @@ function generateAIText(prompt, replaceSelected = false) {
     showNotification(`Error: ${error.message}`);
     log.error('OpenAI API Error:', error);
   });
+}
+
+// Helper function to get display text for actions
+function getActionDisplayText(action) {
+  switch (action) {
+    case 'rewrite':
+      return 'Rewriting';
+    case 'summarize':
+      return 'Summarizing';
+    case 'expand':
+      return 'Expanding';
+    case 'generate':
+      return 'Generating';
+    default:
+      return 'Processing';
+  }
 }
 
 // Insert generated text into the current text element
@@ -963,7 +1041,7 @@ function handleKeyboardShortcuts(event) {
         event.preventDefault();
         if (currentTextElement) {
           showPromptPopup('What would you like to generate?', '', (prompt) => {
-            generateAIText(generatePrompt('generate', prompt));
+            generateAIText('generate', prompt);
           });
         }
         break;
@@ -973,7 +1051,7 @@ function handleKeyboardShortcuts(event) {
         if (currentTextElement) {
           const selectedText = getSelectedText(currentTextElement);
           if (selectedText) {
-            generateAIText(generatePrompt('rewrite', selectedText), true);
+            generateAIText('rewrite', selectedText, true);
           } else {
             showNotification('Please select text to rewrite');
           }
@@ -985,10 +1063,10 @@ function handleKeyboardShortcuts(event) {
         if (currentTextElement) {
           const selectedText = getSelectedText(currentTextElement);
           if (selectedText) {
-            generateAIText(generatePrompt('summarize', selectedText), true);
+            generateAIText('summarize', selectedText, true);
           } else {
             const fullText = getElementText(currentTextElement);
-            generateAIText(generatePrompt('summarize', fullText), false);
+            generateAIText('summarize', fullText, false);
           }
         }
         break;
@@ -998,7 +1076,7 @@ function handleKeyboardShortcuts(event) {
         if (currentTextElement) {
           const selectedText = getSelectedText(currentTextElement);
           if (selectedText) {
-            generateAIText(generatePrompt('expand', selectedText), true);
+            generateAIText('expand', selectedText, true);
           } else {
             showNotification('Please select text to expand');
           }
