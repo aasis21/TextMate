@@ -88,6 +88,69 @@ let aiButton = null;
 let aiPopup = null;
 let textmateContainer = null; // Container for all TextMate elements
 
+// State management for undo functionality
+const stateManager = {
+  previousState: null,
+  
+  saveState: function(element) {
+    if (!element) return;
+    
+    this.previousState = {
+      text: element.tagName === 'INPUT' || element.tagName === 'TEXTAREA' 
+        ? element.value 
+        : element.innerText || element.textContent,
+      selectionStart: element.selectionStart || 0,
+      selectionEnd: element.selectionEnd || 0,
+      element: element
+    };
+    log.info('Saved previous state');
+  },
+  
+  restoreState: function() {
+    if (!this.previousState) {
+      log.info('No previous state to restore');
+      return false;
+    }
+    
+    const { text, selectionStart, selectionEnd, element } = this.previousState;
+    
+    try {
+      if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+        element.value = text;
+        element.selectionStart = selectionStart;
+        element.selectionEnd = selectionEnd;
+      } else {
+        element.innerText = text;
+      }
+      
+      // Trigger input event to notify the page of the change
+      const inputEvent = new Event('input', { bubbles: true });
+      element.dispatchEvent(inputEvent);
+      
+      // Also trigger change event
+      const changeEvent = new Event('change', { bubbles: true });
+      element.dispatchEvent(changeEvent);
+      
+      // Focus the element
+      element.focus();
+      
+      log.info('State restored successfully');
+      showNotification('Changes undone');
+      
+      // Clear the previous state after restore
+      this.previousState = null;
+      return true;
+    } catch (error) {
+      log.error('Error restoring state:', error);
+      return false;
+    }
+  },
+  
+  hasPreviousState: function() {
+    return this.previousState !== null;
+  }
+};
+
 // Initialize the extension
 function initialize() {
   log.info('Initializing extension');
@@ -506,6 +569,9 @@ function handleAIAction(action) {
   // Store a reference to the text element to ensure it's not lost
   const textElement = currentTextElement;
   
+  // Save the current state before making changes
+  stateManager.saveState(textElement);
+  
   const selectedText = getSelectedText(textElement);
   const fullText = getElementText(textElement);
   
@@ -765,6 +831,9 @@ function insertGeneratedText(text, replaceSelected) {
         
         log.info('Inserted at cursor position');
       }
+      
+      // Show success notification with undo hint
+      showNotification('Text inserted successfully! Press Ctrl+Z to undo');
     } else if (currentTextElement.getAttribute('contenteditable') === 'true') {
       log.info('Inserting into contenteditable element');
       
@@ -861,6 +930,15 @@ function showNotification(message) {
 
 // Handle keyboard shortcuts
 function handleKeyboardShortcuts(event) {
+  // Check if Ctrl+Z is pressed and we have a previous state
+  if (event.ctrlKey && !event.shiftKey && (event.key === 'z' || event.key === 'Z')) {
+    if (stateManager.hasPreviousState()) {
+      event.preventDefault();
+      stateManager.restoreState();
+      return;
+    }
+  }
+  
   // Check if Ctrl+Shift is pressed
   if (event.ctrlKey && event.shiftKey) {
     switch (event.key) {
