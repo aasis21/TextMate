@@ -88,9 +88,6 @@ let aiButton = null;
 let aiPopup = null;
 let textmateContainer = null; // Container for all TextMate elements
 
-// Import site context manager
-import { siteContextManager } from '../utils/siteContext.js';
-
 // State management for undo functionality
 const stateManager = {
   previousState: null,
@@ -157,31 +154,22 @@ const stateManager = {
 // Hardcoded URL patterns and their contexts
 const URL_CONTEXTS = [
   {
-    urlPattern: 'portal.microsofticm.com/api',
-    context: 'This is an API documentation platform. Use technical, precise language and maintain API terminology.',
+    urlPattern: 'portal.microsofticm.com',
+    context: 'This is the Microsoft Incident Management Portal used by engineers for incident tracking, resolution, and documentation. Use formal, structured language with clear technical descriptions, focusing on impact, resolution, and action items.',
     enabled: true
   },
   {
-    urlPattern: 'portal.microsofticm.com/pullrequest',
-    context: 'This is a pull request system used by software engineers to review code changes. Focus on code review best practices and clear technical explanations.',
+    urlPattern: 'microsoft.visualstudio.com',
+    context: 'This is Azure DevOps. Use clear, concise, and professional language appropriate for task tracking, sprint planning, repositories, and code reviews.',
     enabled: true
   },
   {
-    urlPattern: 'portal.microsofticm.com/bugs',
-    context: 'This is a bug tracking system. Keep descriptions technical, precise, and focus on reproducibility steps and impact.',
-    enabled: true
-  },
-  {
-    urlPattern: 'portal.microsofticm.com/docs',
-    context: 'This is internal documentation. Use clear, structured technical writing with appropriate cross-references.',
-    enabled: true
-  },
-  {
-    urlPattern: 'portal.microsofticm.com/help',
-    context: 'This is a help center for users. Use simple, clear language and avoid technical jargon unless necessary.',
+    urlPattern: 'msazure.visualstudio.com',
+    context: 'This is Azure DevOps. Use clear, concise, and professional language appropriate for task tracking, sprint planning, repositories, and code reviews.',
     enabled: true
   }
 ];
+
 
 // Get context for a URL
 function getContextForUrl(url) {
@@ -615,25 +603,27 @@ function generatePrompt(action, text) {
   const currentContext = getContextForUrl(window.location.href);
   log.info('Using context for prompt:', currentContext || 'None');
 
-  // Base prompts for each action
-  let basePrompt;
+  // Task prompts for each action
+  let taskPrompt;
   switch (action) {
     case 'rewrite':
-      basePrompt = `Task: Rewrite the following text using clear, easy-to-understand language. Fix any spelling or grammar mistakes. Do not change or expand acronyms. Only return the rewritten text.\n\nText: ${text}`;
+      taskPrompt = 'Rewrite the following text using clear, easy-to-understand language. Fix any spelling or grammar mistakes. Do not change or expand acronyms. Only return the rewritten text.';
       break;
     case 'summarize':
-      basePrompt = `Task: Summarize the following text in a concise and clear format.\n\nText: ${text}`;
+      taskPrompt = 'Summarize the following text in a concise and clear format.';
       break;
     case 'expand':
-      basePrompt = `Task: Expand on the following text with more relevant technical or contextual details. Maintain clarity and coherence.\n\nText: ${text}`;
+      taskPrompt = 'Expand on the following text with more relevant technical or contextual details. Maintain clarity and coherence.';
       break;
     case 'generate':
-      basePrompt = text; // For generate action, the text is already the prompt
-      break;
+      return text; // For generate action, the text is already the prompt
     default:
       log.error('Unknown action for prompt generation:', action);
       return text;
   }
+
+  // Combine task and text into base prompt
+  const basePrompt = `Task: ${taskPrompt}\n------------------------------------------------------------------------------------------------------\n ${text}`;
 
   // Add context if available
   return currentContext
@@ -824,6 +814,8 @@ function generateAIText(action, text, replaceSelected = false) {
   // Generate the prompt with context
   const prompt = generatePrompt(action, text);
   
+  log.info('Prompt to AI:', prompt);
+
   // Show loading indicator with the appropriate action
   const loadingIndicator = showLoadingIndicator(getActionDisplayText(action));
   
