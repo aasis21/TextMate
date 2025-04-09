@@ -556,6 +556,23 @@ function showAIOptions() {
   }
 }
 
+// Generate prompt based on action and text input
+function generatePrompt(action, text) {
+  switch (action) {
+    case 'rewrite':
+      return `Rewrite the following text using clear, easy-to-understand language. Fix any spelling or grammar mistakes, but do not change or expand acronyms:: Text : ${text}`;
+    case 'summarize':
+      return `Summarize the following text: ${text}`;
+    case 'expand':
+      return `Expand on the following text with more details: ${text}`;
+    case 'generate':
+      return text; // For generate action, the text is already the prompt
+    default:
+      log.error('Unknown action for prompt generation:', action);
+      return text;
+  }
+}
+
 // Handle AI actions (generate, rewrite, summarize, expand)
 function handleAIAction(action) {
   log.info('Handling AI action:', action);
@@ -586,26 +603,26 @@ function handleAIAction(action) {
         }
         
         log.info('Generating text with prompt:', prompt.substring(0, 50) + (prompt.length > 50 ? '...' : ''));
-        generateAIText(prompt, false);
+        generateAIText(generatePrompt('generate', prompt), false);
       });
       break;
     case 'rewrite':
       if (selectedText) {
-        generateAIText(`Rewrite the following text using clear, easy-to-understand language. Fix any spelling or grammar mistakes, but do not change or expand acronyms:: Text : ${selectedText}`, true);
+        generateAIText(generatePrompt('rewrite', selectedText), true);
       } else {
         showNotification('Please select text to rewrite');
       }
       break;
     case 'summarize':
       if (selectedText) {
-        generateAIText(`Summarize the following text: ${selectedText}`, true);
+        generateAIText(generatePrompt('summarize', selectedText), true);
       } else {
-        generateAIText(`Summarize the following text: ${fullText}`, false);
+        generateAIText(generatePrompt('summarize', fullText), false);
       }
       break;
     case 'expand':
       if (selectedText) {
-        generateAIText(`Expand on the following text with more details: ${selectedText}`, true);
+        generateAIText(generatePrompt('expand', selectedText), true);
       } else {
         showNotification('Please select text to expand');
       }
@@ -941,12 +958,12 @@ function handleKeyboardShortcuts(event) {
   // Check if Ctrl+Shift is pressed
   if (event.ctrlKey && event.shiftKey) {
     switch (event.key) {
-      case 'A': // Ctrl+Shift+A - Generate AI response
-      case 'a':
+      case 'G': // Ctrl+Shift+G - Generate AI response
+      case 'g':
         event.preventDefault();
         if (currentTextElement) {
           showPromptPopup('What would you like to generate?', '', (prompt) => {
-            generateAIText(prompt);
+            generateAIText(generatePrompt('generate', prompt));
           });
         }
         break;
@@ -956,7 +973,7 @@ function handleKeyboardShortcuts(event) {
         if (currentTextElement) {
           const selectedText = getSelectedText(currentTextElement);
           if (selectedText) {
-            generateAIText(`Rewrite the following text: ${selectedText}`, true);
+            generateAIText(generatePrompt('rewrite', selectedText), true);
           } else {
             showNotification('Please select text to rewrite');
           }
@@ -968,10 +985,10 @@ function handleKeyboardShortcuts(event) {
         if (currentTextElement) {
           const selectedText = getSelectedText(currentTextElement);
           if (selectedText) {
-            generateAIText(`Summarize the following text: ${selectedText}`, true);
+            generateAIText(generatePrompt('summarize', selectedText), true);
           } else {
             const fullText = getElementText(currentTextElement);
-            generateAIText(`Summarize the following text: ${fullText}`, false);
+            generateAIText(generatePrompt('summarize', fullText), false);
           }
         }
         break;
@@ -981,7 +998,7 @@ function handleKeyboardShortcuts(event) {
         if (currentTextElement) {
           const selectedText = getSelectedText(currentTextElement);
           if (selectedText) {
-            generateAIText(`Expand on the following text with more details: ${selectedText}`, true);
+            generateAIText(generatePrompt('expand', selectedText), true);
           } else {
             showNotification('Please select text to expand');
           }
