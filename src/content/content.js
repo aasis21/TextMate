@@ -363,19 +363,50 @@ function handleFocusIn(event) {
 // Check if an element is a text input
 function isTextInputElement(element) {
   const validTagNames = ['INPUT', 'TEXTAREA'];
-  const validInputTypes = ['text', 'search', 'url', 'tel', 'email', 'password', null, ''];
+  const validInputTypes = ['text', 'url', 'tel', 'email', 'password', null, ''];
+  
+  // Helper function to check if an element is likely a search box
+  function isSearchBox(el) {
+    // Check for explicit search type
+    if (el.type === 'search') return true;
+    
+    // Check common search-related attributes
+    if (el.getAttribute('role') === 'search') return true;
+    if (el.getAttribute('aria-label')?.toLowerCase().includes('search')) return true;
+    if (el.getAttribute('placeholder')?.toLowerCase().includes('search')) return true;
+    if (el.getAttribute('name')?.toLowerCase().includes('search')) return true;
+    if (el.getAttribute('id')?.toLowerCase().includes('search')) return true;
+    if (el.getAttribute('class')?.toLowerCase().includes('search')) return true;
+    
+    // Check if the element or its parent has search-related text
+    const elementText = (el.value || el.textContent || '').toLowerCase();
+    if (elementText.includes('search')) return true;
+    
+    // Check parent elements for search context (up to 3 levels)
+    let parent = el.parentElement;
+    let level = 0;
+    while (parent && level < 3) {
+      if (parent.textContent?.toLowerCase().includes('search')) return true;
+      if (parent.getAttribute('class')?.toLowerCase().includes('search')) return true;
+      if (parent.getAttribute('id')?.toLowerCase().includes('search')) return true;
+      parent = parent.parentElement;
+      level++;
+    }
+    
+    return false;
+  }
   
   // Check for contenteditable divs
   if (element.getAttribute('contenteditable') === 'true') {
-    return true;
+    return !isSearchBox(element);
   }
   
   // Check for input fields and textareas
   if (validTagNames.includes(element.tagName)) {
     if (element.tagName === 'INPUT') {
-      return validInputTypes.includes(element.type);
+      return validInputTypes.includes(element.type) && !isSearchBox(element);
     }
-    return true;
+    return !isSearchBox(element);
   }
   
   return false;
@@ -668,7 +699,10 @@ function handleAIAction(action) {
       if (selectedText) {
         generateAIText('rewrite', selectedText, true);
       } else {
-        showNotification('Please select text to rewrite');
+        // If no text is selected, rewrite the entire content
+        const fullText = getElementText(textElement);
+        // Pass true to replace the entire content
+        generateAIText('rewrite', fullText, true);
       }
       break;
     case 'summarize':
@@ -895,16 +929,22 @@ function insertGeneratedText(text, replaceSelected) {
       if (replaceSelected) {
         const start = currentTextElement.selectionStart;
         const end = currentTextElement.selectionEnd;
-        const currentValue = currentTextElement.value;
         
-        // Replace selected text
-        currentTextElement.value = currentValue.substring(0, start) + text + currentValue.substring(end);
-        
-        // Set cursor position after inserted text
-        currentTextElement.selectionStart = start + text.length;
-        currentTextElement.selectionEnd = start + text.length;
-        
-        log.info('Replaced selected text');
+        // If no text is selected but replaceSelected is true, replace entire content
+        if (start === end) {
+          currentTextElement.value = text;
+          currentTextElement.selectionStart = text.length;
+          currentTextElement.selectionEnd = text.length;
+          log.info('Replaced entire content');
+        } else {
+          const currentValue = currentTextElement.value;
+          // Replace selected text
+          currentTextElement.value = currentValue.substring(0, start) + text + currentValue.substring(end);
+          // Set cursor position after inserted text
+          currentTextElement.selectionStart = start + text.length;
+          currentTextElement.selectionEnd = start + text.length;
+          log.info('Replaced selected text');
+        }
       } else {
         // Get current cursor position
         const cursorPos = currentTextElement.selectionEnd || currentTextElement.value.length;
@@ -919,17 +959,24 @@ function insertGeneratedText(text, replaceSelected) {
         
         log.info('Inserted at cursor position');
       }
-      
     } else if (currentTextElement.getAttribute('contenteditable') === 'true') {
       log.info('Inserting into contenteditable element');
       
       const selection = window.getSelection();
-      if (replaceSelected && selection.rangeCount > 0) {
-        const range = selection.getRangeAt(0);
-        range.deleteContents();
-        range.insertNode(document.createTextNode(text));
+      if (replaceSelected) {
+        if (!selection.rangeCount || selection.toString() === '') {
+          // If no text is selected but replaceSelected is true, replace entire content
+          currentTextElement.textContent = text;
+          log.info('Replaced entire content in contenteditable');
+        } else {
+          const range = selection.getRangeAt(0);
+          range.deleteContents();
+          range.insertNode(document.createTextNode(text));
+          log.info('Replaced selected text in contenteditable');
+        }
       } else {
         currentTextElement.appendChild(document.createTextNode(text));
+        log.info('Appended text to contenteditable');
       }
     } else {
       // Fallback for other types of elements
@@ -1045,7 +1092,10 @@ function handleKeyboardShortcuts(event) {
           if (selectedText) {
             generateAIText('rewrite', selectedText, true);
           } else {
-            showNotification('Please select text to rewrite');
+            // If no text is selected, rewrite the entire content
+            const fullText = getElementText(currentTextElement);
+            // Pass true to replace the entire content
+            generateAIText('rewrite', fullText, true);
           }
         }
         break;

@@ -27,7 +27,7 @@ TextMate is a browser extension that provides AI-powered text generation and rew
 |----------|--------|-------------|
 | `Alt + A` | Open Menu | Opens the AI options menu when focused in a text field |
 | `Ctrl + Shift + G` | Generate | Creates AI content based on your prompt |
-| `Ctrl + Shift + R` | Rewrite | Rephrases your selected text |
+| `Ctrl + Shift + R` | Rewrite | Rephrases selected text or entire text box if no selection |
 | `Ctrl + Shift + Z` | Summarize | Condenses your selected text or entire content |
 | `Ctrl + Shift + E` | Expand | Adds more details to your selected text |
 
@@ -69,7 +69,7 @@ The floating button provides quick access to AI features directly within any tex
 2. Look for the "✨ AI" button that appears near your cursor
 3. Click the button to see these options:
    - **Generate**: Create new AI-written content based on a prompt
-   - **Rewrite**: Rephrase your selected text with AI assistance
+   - **Rewrite**: Rephrase your text with AI assistance
    - **Summarize**: Condense your text into a concise summary
    - **Expand**: Add more details and depth to your selected text
 4. After selecting an option, follow any additional prompts if needed
@@ -83,7 +83,7 @@ For power users who prefer to keep their hands on the keyboard:
 |----------|--------|-------------|
 | `Alt + A` | Open Menu | Opens the AI options menu when focused in a text field |
 | `Ctrl + Shift + G` | Generate | Creates AI content based on your prompt |
-| `Ctrl + Shift + R` | Rewrite | Rephrases your selected text |
+| `Ctrl + Shift + R` | Rewrite | Rephrases selected text or entire text box if no selection |
 | `Ctrl + Shift + Z` | Summarize | Condenses your selected text or entire content |
 | `Ctrl + Shift + E` | Expand | Adds more details to your selected text |
 
