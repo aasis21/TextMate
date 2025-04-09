@@ -528,7 +528,7 @@ function handleAIAction(action) {
       break;
     case 'rewrite':
       if (selectedText) {
-        generateAIText(`Rewrite the following text: ${selectedText}`, true);
+        generateAIText(`Rewrite the following text using clear, easy-to-understand language. Fix any spelling or grammar mistakes, but do not change or expand acronyms:: Text : ${selectedText}`, true);
       } else {
         showNotification('Please select text to rewrite');
       }
