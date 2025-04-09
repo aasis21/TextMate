@@ -569,9 +569,6 @@ function handleAIAction(action) {
   // Store a reference to the text element to ensure it's not lost
   const textElement = currentTextElement;
   
-  // Save the current state before making changes
-  stateManager.saveState(textElement);
-  
   const selectedText = getSelectedText(textElement);
   const fullText = getElementText(textElement);
   
@@ -734,6 +731,10 @@ function generateAIText(prompt, replaceSelected = false) {
   log.info('Generating AI text with model:', aiModel);
   log.info('Current text element:', currentTextElement);
   
+  // Always save state before making any changes
+  log.info('Saving current state before AI generation');
+  stateManager.saveState(currentTextElement);
+  
   // Determine the action type from the prompt
   let action = 'Generating';
   if (prompt.startsWith('Rewrite')) {
@@ -832,8 +833,6 @@ function insertGeneratedText(text, replaceSelected) {
         log.info('Inserted at cursor position');
       }
       
-      // Show success notification with undo hint
-      showNotification('Text inserted successfully! Press Ctrl+Z to undo');
     } else if (currentTextElement.getAttribute('contenteditable') === 'true') {
       log.info('Inserting into contenteditable element');
       
@@ -872,7 +871,7 @@ function insertGeneratedText(text, replaceSelected) {
     currentTextElement.focus();
     
     // Show success notification
-    showNotification('Text inserted successfully');
+    showNotification('Text inserted successfully! Press Ctrl+Z to undo');
   } catch (error) {
     log.error('Error inserting text:', error);
     showNotification('Error inserting text: ' + error.message);
