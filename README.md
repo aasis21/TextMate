@@ -89,7 +89,27 @@ Need to generate text quickly? Use the popup interface:
 
 The popup also shows your keyboard shortcuts for quick reference!
 
+### 💰 Cost & Value
 
+TextMate is designed to be incredibly cost-effective while providing professional-grade AI writing assistance. Here's what you can expect with GPT-3.5-Turbo:
+
+**Per Operation Costs**:
+- ✨ Text Generation: ~$0.0005 (half a penny!)
+- 🔄 Text Rewriting: ~$0.001 (one-tenth of a cent)
+- 📝 Text Expansion: ~$0.001 (one-tenth of a cent)
+
+**Monthly Usage Examples**:
+- 🌱 Light Usage (10 operations/day): $0.30-0.90/month
+- 🚀 Heavy Usage (50 operations/day): $1.50-4.50/month
+
+**Why It's Worth It**:
+- Pay-as-you-go: Only pay for what you actually use
+- No subscription fees or hidden costs
+- Full control with your own API key
+- Professional writing assistance at a fraction of traditional costs
+- Unlimited potential with minimal investment
+
+Compare this to traditional writing services or AI writing tools with monthly subscriptions, and you'll see why TextMate is the smart choice for enhancing your writing productivity!
 
 ---
 
