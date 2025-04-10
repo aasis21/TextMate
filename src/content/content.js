@@ -219,7 +219,7 @@ function initialize() {
   // Add a MutationObserver to handle dynamically added content
   setupMutationObserver();
   
-  // Add a MutationObserver to ensure container exists
+  // Add a MutationObserver to ensure container stays at the end of body
   setupContainerObserver();
   
   log.info('Event listeners added');
@@ -244,16 +244,23 @@ function createTextMateContainer() {
   textmateContainer.style.pointerEvents = 'none'; // Allow clicks to pass through
   textmateContainer.style.zIndex = '2147483647'; // Maximum possible z-index
   
-  // Add container to body
+  // Append to the end of body to ensure it's on top
   document.body.appendChild(textmateContainer);
   
   log.info('Container created');
 }
 
-// Setup MutationObserver to ensure container exists
+// Setup MutationObserver to ensure container stays at the end of body
 function setupContainerObserver() {
   const observer = new MutationObserver(function(mutations) {
-    // Only check if container exists and recreate if needed
+    // Check if our container is still the last child of body
+    if (document.body.lastChild !== textmateContainer) {
+      log.info('Container is not at the end of body, moving it');
+      // Move it to the end
+      document.body.appendChild(textmateContainer);
+    }
+    
+    // Also check if container still exists
     if (!document.getElementById('textmate-container')) {
       log.info('Container was removed, recreating it');
       createTextMateContainer();
@@ -405,7 +412,7 @@ function isTextInputElement(element) {
   return false;
 }
 
-// Show AI button with improved positioning
+// Create and show the AI button next to the text field
 function showAIButton(element) {
   // Remove existing button if any
   hideAIButton();
@@ -425,26 +432,12 @@ function showAIButton(element) {
   // Add a data attribute to the text element to link it to the button
   element.dataset.textmateId = aiButton.dataset.textElementId;
   
-  // Position the button relative to the viewport
+  // Position the button next to the text field
   const rect = element.getBoundingClientRect();
-  const viewportWidth = window.innerWidth;
-  
-  // Check if there's enough space to the right
-  const spaceToRight = viewportWidth - rect.right;
-  const buttonWidth = 50; // Approximate button width
-  const margin = 5;
-  
-  if (spaceToRight >= buttonWidth + margin) {
-    // Position to the right if there's space
-    aiButton.style.left = `${rect.right + margin}px`;
-  } else {
-    // Position to the left if there's not enough space on the right
-    aiButton.style.left = `${Math.max(margin, rect.left - buttonWidth - margin)}px`;
-  }
-  
+  aiButton.style.position = 'absolute';
+  aiButton.style.left = `${rect.right + 5}px`;
   aiButton.style.top = `${rect.top}px`;
-  aiButton.style.position = 'fixed';
-  aiButton.style.zIndex = '2147483647';
+  aiButton.style.zIndex = '2147483647'; // Maximum possible z-index value
   
   // Make sure the button is visible and clickable
   aiButton.style.display = 'block';
@@ -452,15 +445,41 @@ function showAIButton(element) {
   aiButton.style.pointerEvents = 'auto';
   aiButton.style.opacity = '1';
   
-  // Add to TextMate container
+  // Add to TextMate container instead of document body
   textmateContainer.appendChild(aiButton);
   log.info('AI button added to container');
   
-  // Add event listeners
-  aiButton.addEventListener('click', handleAIButtonClick, true);
-  aiButton.onclick = handleAIButtonClick;
+  // Add multiple event handlers to ensure at least one works
+  aiButton.addEventListener('click', handleAIButtonClick, true); // Use capture phase
+  aiButton.onclick = handleAIButtonClick; // Direct onclick property
+  
+  // Add direct click handler with HTML attribute
   aiButton.setAttribute('onclick', 'this.dispatchEvent(new CustomEvent("textmate-click"))');
   aiButton.addEventListener('textmate-click', handleAIButtonClick, true);
+  
+  // Add additional mousedown event for debugging
+  aiButton.addEventListener('mousedown', function(e) {
+    log.info('AI button mousedown detected');
+    // Try to trigger click on mousedown as a fallback
+    setTimeout(() => {
+      log.info('Triggering click from mousedown');
+      showAIOptionsForButton(aiButton);
+    }, 100);
+  }, true);
+  
+  // Test if button is clickable
+  log.info('Button element:', aiButton);
+  log.info('Button clickable:', (typeof aiButton.click === 'function'));
+  
+  // Add a keyboard shortcut to trigger the AI button (Alt+A)
+  document.addEventListener('keydown', function(e) {
+    if (e.altKey && (e.key === 'a' || e.key === 'A')) {
+      log.info('Alt+A shortcut detected');
+      if (aiButton) {
+        showAIOptionsForButton(aiButton);
+      }
+    }
+  });
 }
 
 // Handle AI button click
