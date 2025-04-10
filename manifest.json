@@ -5,8 +5,6 @@
   "description": "AI-powered text generation and rewriting for any text box on the web",
   "permissions": [
     "storage",
-    "activeTab",
-    "scripting",
     "clipboardWrite"
   ],
   "host_permissions": [
