@@ -167,27 +167,33 @@ const URL_CONTEXTS = [
     urlPattern: 'msazure.visualstudio.com',
     context: 'This is Azure DevOps. Use clear, concise, and professional language appropriate for task tracking, sprint planning, repositories, and code reviews.',
     enabled: true
+  },
+  {
+    urlPattern: 'pullrequest',
+    context: 'You are acting on a Pull Request (PR). The user may be writing a PR summary, responding to a comment, or making a code review. Use clear, actionable, and constructive language relevant to PRs.',
+    enabled: true
   }
 ];
 
 
 // Get context for a URL
 function getContextForUrl(url) {
+  let matchedContexts = [];
   for (const contextConfig of URL_CONTEXTS) {
     if (!contextConfig.enabled) continue;
-    
     // Convert URL pattern to regex
     const pattern = contextConfig.urlPattern
       .replace(/\./g, '\\.')  // Escape dots
       .replace(/\*/g, '.*');  // Convert * to .*
-    
     const regex = new RegExp(pattern);
     if (regex.test(url)) {
       log.info('Found matching context for URL:', url);
-      return contextConfig.context;
+      matchedContexts.push(contextConfig.context);
     }
   }
-  
+  if (matchedContexts.length > 0) {
+    return matchedContexts.join('\n');
+  }
   log.info('No matching context found for URL:', url);
   return '';
 }
