@@ -26,6 +26,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
+      "exclude_matches": ["https://dataexplorer.azure.com/*"],
       "js": ["src/content/content.js"],
       "css": ["src/content/content.css"],
       "run_at": "document_end",
